@@ -7,4 +7,8 @@ $string['leaveblanktohide'] = 'Laisser vide pour cacher';
 $string['configtitle'] = 'Titre visible du bloc';
 $string['configcontent'] = 'Contenu pour le rôle : {$a}';
 $string['configcontentforall'] = 'Contenu pour tous les rôles';
+$string['configcontext'] = 'Contexte';
+$string['system'] = 'Système';
+$string['course'] = 'Cours (courant)';
+$string['rolespecifichtml:addinstance'] = 'Peut ajouter une instance';
 

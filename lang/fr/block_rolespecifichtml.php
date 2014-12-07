@@ -1,5 +1,7 @@
 <?php
 
+$string['rolespecifichtml:addinstance'] = 'Peut ajouter une instance';
+
 $string['blockname'] = 'HTML (par rôle)';
 $string['pluginname'] = 'HTML (par rôle)';
 $string['newhtmlblock'] = 'Nouveau bloc Html par role';
@@ -10,5 +12,6 @@ $string['configcontentforall'] = 'Contenu pour tous les rôles';
 $string['configcontext'] = 'Contexte';
 $string['system'] = 'Système';
 $string['course'] = 'Cours (courant)';
-$string['rolespecifichtml:addinstance'] = 'Peut ajouter une instance';
+$string['context'] = 'Contexte des rôles';
+$string['context_help'] = 'Si vous changez ce contexte, enregistrez d\'abord le changement puis revenez au formulaire pour éditer la liste de rôles mise à jour.';
 

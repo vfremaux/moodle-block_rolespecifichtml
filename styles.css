@@ -1,2 +1,8 @@
-.block.block_groupspecifichtml .content {padding:0;}
-.block.block_groupspecifichtml .content .no-overflow {padding:4px;}
+
+.block.block_rolespecifichtml .content {
+    padding:0;
+}
+
+.block.block_rolespecifichtml .content .no-overflow {
+    padding:4px;
+}

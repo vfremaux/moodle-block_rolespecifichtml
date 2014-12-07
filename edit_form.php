@@ -25,7 +25,7 @@
 
 class block_rolespecifichtml_edit_form extends block_edit_form {
 
-    var $contextlevel;
+    var $context;
 
     protected function specific_definition($mform) {
         global $COURSE, $DB;
@@ -41,6 +41,7 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         $mform->addElement('select', 'config_context', get_string('configcontext', 'block_rolespecifichtml'), $contextopts);
         $mform->setType('config_context', PARAM_TEXT);
         $mform->setDefault('config_context', 'course');
+        $mform->addHelpButton('config_context', 'context', 'block_rolespecifichtml');
 
         $editoroptions = array('maxfiles' => EDITOR_UNLIMITED_FILES, 'noclean' => true, 'context' => $this->block->context);
         $mform->addElement('editor', 'config_text_all', get_string('configcontentforall', 'block_rolespecifichtml'), null, $editoroptions);
@@ -49,10 +50,11 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         // TODO : restrict to endorsable roles...
         // TODO program roles available on context
 
-        if (empty($this->contextlevel)) {
-            $this->contextlevel = CONTEXT_COURSE;
+        if (empty($this->context)) {
+            $this->context = context_course::instance($COURSE->id);
         }
 
+        /*
         $sql = "
             SELECT DISTINCT
                 r.*
@@ -64,15 +66,22 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
                 contextlevel = $this->contextlevel
         ";
         $roles = $DB->get_records_sql($sql);
+        */
+        $contextroles = get_roles_for_contextlevels($this->context->contextlevel);
+        $roles = role_fix_names(get_all_roles(), $this->context, ROLENAME_ORIGINAL);
 
         $rids = array();
         foreach ($roles as $r) {
-            $mform->addElement('editor', 'config_text_'.$r->id, get_string('configcontent', 'block_rolespecifichtml', $r->name), null, $editoroptions);
+            if (!in_array($r->id, $contextroles)) {
+                continue;
+            }
+            $mform->addElement('editor', 'config_text_'.$r->id, get_string('configcontent', 'block_rolespecifichtml', $r->localname), null, $editoroptions);
             $mform->setType('config_text_'.$r->id, PARAM_RAW); // XSS is prevented when printing the block contents and serving files
             $rids[] = $r->id;
         }
 
         $mform->addElement('hidden', 'config_textids');
+        $mform->setType('config_textids', PARAM_TEXT);
         $mform->setDefault('config_textids', implode(',', $rids));
 
     }
@@ -80,8 +89,9 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
     function set_data($defaults, &$files = null) {
         global $COURSE, $DB;
 
-        $this->contextlevel = ($this->block->config->context == 'course') ? CONTEXT_COURSE : CONTEXT_SYSTEM ;
+        $this->context = (empty($this->block->config) || $this->block->config->context == 'course') ? context_course::instance($COURSE->id) : context_system::instance() ;
 
+        /*
         // TODO : restrict to endorsable roles... 
         // TODO program roles available on context   
         $sql = "
@@ -96,6 +106,9 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         ";
 
         $roles = $DB->get_records_sql($sql, array($this->contextlevel));
+        */
+        $contextroles = get_roles_for_contextlevels($this->context->contextlevel);
+        $roles = role_fix_names(get_all_roles(), $this->context, ROLENAME_ORIGINAL);
 
         if (!empty($this->block->config) && is_object($this->block->config)) {
 
@@ -115,6 +128,9 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
 
             if (!empty($roles)) {
                 foreach ($roles as $r) {
+                    if (!in_array($r->id, $contextroles)) {
+                        continue;
+                    }
                     // Draft file handling for each.
                     $textvar = 'text_'.$r->id;
                     $configtextvar = 'config_text_'.$r->id;
@@ -161,6 +177,9 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         parent::set_data($defaults);
 
         // Restore $text
+        if (!isset($this->block->config)) {
+            $this->block->config = new StdClass();
+        }
         $this->block->config->text_all = $text_all;
         if (!empty($roles)) {
             foreach ($roles as $r) {

@@ -36,7 +36,7 @@ class block_rolespecifichtml extends block_base {
 
     public function get_content() {
         global $COURSE, $CFG, $USER;
-        
+
         if ($this->content !== NULL) {
             return $this->content;
         }
@@ -56,10 +56,13 @@ class block_rolespecifichtml extends block_base {
 
         $this->content = new stdClass;
         $tk = "text_all";
+        if (!isset($this->config)) {
+            $this->config = new StdClass();
+        }
         $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
         $this->content->text .= !empty($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
         $textkey = "text_$roleid";
-         $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
+        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
         $this->content->text = isset($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
         $this->content->footer = '';
 
@@ -141,12 +144,12 @@ class block_rolespecifichtml extends block_base {
         return empty($this->config->title);
     }
 
-    /** 
-    * get highest role in course context
-    */
+    /**
+     * get highest role in course context
+     */
     public function get_highest_role() {
         global $COURSE, $USER;
-        
+
         if (empty($this->config) || $this->config->context == 'course') {
             $context = context_course::instance($COURSE->id);
         } else {

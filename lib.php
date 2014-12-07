@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -48,12 +47,14 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
 
     if ($parentcontext = get_context_instance_by_id($birecord_or_cm->parentcontextid)) {
         if ($parentcontext->contextlevel == CONTEXT_USER) {
-            // force download on all personal pages including /my/
-            //because we do not have reliable way to find out from where this is used
+            /*
+             * force download on all personal pages including /my/
+             * because we do not have reliable way to find out from where this is used
+             */
             $forcedownload = true;
         }
     } else {
-        // weird, there should be parent context, better force dowload then
+        // Weird, there should be parent context, better force dowload then.
         $forcedownload = true;
     }
 
@@ -76,27 +77,27 @@ function block_rolespecifichtml_global_db_replace($search, $replace) {
         $config = unserialize(base64_decode($instance->configdata));
         $commit = false;
         if (isset($config->text_all) and is_string($config->text_all)) {
-        	$commit = true;
+            $commit = true;
             $config->text_all = str_replace($search, $replace, $config->text_all);
         }
 
         if (isset($config->text_0) and is_string($config->text_0)) {
-        	$commit = true;
+            $commit = true;
             $config->text_0 = str_replace($search, $replace, $config->text_0);
         }
-        
+
         $groups = groups_get_all_groups($isntance->courseid);
-        if (!empty($groups)){
-        	fireach($groups as $g){
-	        	$textvar = 'text_'.$g->id;
-		        if (isset($config->{$textvar}) and is_string($config->{$textvar})) {
-		        	$commit = true;
-		            $config->{$textvar} = str_replace($search, $replace, $config->{$textvar});
-		        }
-		    }
+        if (!empty($groups)) {
+            foreach ($groups as $g) {
+                $textvar = 'text_'.$g->id;
+                if (isset($config->{$textvar}) and is_string($config->{$textvar})) {
+                    $commit = true;
+                    $config->{$textvar} = str_replace($search, $replace, $config->{$textvar});
+                }
+            }
         }
-        
-        if ($commit){
+
+        if ($commit) {
             $DB->set_field('block_instances', 'configdata', base64_encode(serialize($config)), array('id' => $instance->id));
         }
     }

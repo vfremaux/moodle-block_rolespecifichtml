@@ -1,5 +1,7 @@
 <?php
 
+$string['rolespecifichtml:addinstance'] = 'Can add an instance';
+
 $string['blockname'] = 'HTML (per role)';
 $string['pluginname'] = 'HTML (per role)';
 $string['newhtmlblock'] = 'New Role Html Block';
@@ -10,4 +12,5 @@ $string['configcontentforall'] = 'Block content for all roles';
 $string['configcontext'] = 'Context to check';
 $string['system'] = 'System context';
 $string['course'] = 'Course (current) context';
-$string['rolespecifichtml:addinstance'] = 'Can add an instance';
+$string['context'] = 'Context scope for roles';
+$string['context_help'] = 'If you change this context, please register context change and edit back the block configuration to have role list updated.';

@@ -25,14 +25,23 @@
  */
 
 class block_rolespecifichtml_edit_form extends block_edit_form {
+	
+	var $contextlevel;
+	
     protected function specific_definition($mform) {
     	global $COURSE, $DB;
     	
         // Fields for editing HTML block title and contents.
         $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
 
-        $mform->addElement('text', 'config_title', get_string('configtitle', 'block_editablecontenthtml'));
+        $mform->addElement('text', 'config_title', get_string('configtitle', 'block_rolespecifichtml'));
         $mform->setType('config_title', PARAM_MULTILANG);
+
+		$contextopts['course'] = get_string('course', 'block_rolespecifichtml');
+		$contextopts['system'] = get_string('system', 'block_rolespecifichtml');
+        $mform->addElement('select', 'config_context', get_string('configcontext', 'block_rolespecifichtml'), $contextopts);
+        $mform->setType('config_context', PARAM_TEXT);
+        $mform->setDefault('config_context', 'course');
 
         $editoroptions = array('maxfiles' => EDITOR_UNLIMITED_FILES, 'noclean' => true, 'context' => $this->block->context);
         $mform->addElement('editor', 'config_text_all', get_string('configcontentforall', 'block_rolespecifichtml'), null, $editoroptions);
@@ -40,7 +49,20 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
 
 		// TODO : restrict to endorsable roles... 
 		// TODO program roles available on context   
-		$roles = $this->block->get_usable_roles();
+		
+		if (empty($this->contextlevel)) $this->contextlevel = CONTEXT_COURSE;
+		
+		$sql = "
+			SELECT DISTINCT
+				r.*
+			FROM
+				{role} r,
+				{role_context_levels} rcl
+			WHERE
+				r.id = rcl.roleid AND
+				contextlevel = $this->contextlevel
+		";
+	    $roles = $DB->get_records_sql($sql);
 
         $rids = array();
 		foreach($roles as $r){
@@ -55,13 +77,27 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
     }
 
     function set_data($defaults, &$files = null) {
-    	global $COURSE;
+    	global $COURSE, $DB;
+
+    	$this->contextlevel = ($this->block->config->context == 'course') ? CONTEXT_COURSE : CONTEXT_SYSTEM ;
+
+		// TODO : restrict to endorsable roles... 
+		// TODO program roles available on context   
+		$sql = "
+			SELECT DISTINCT
+				r.*
+			FROM
+				{role} r,
+				{role_context_levels} rcl
+			WHERE
+				r.id = rcl.roleid AND
+				contextlevel = $this->contextlevel
+		";
+
+	    $roles = $DB->get_records_sql($sql);
     	
         if (!empty($this->block->config) && is_object($this->block->config)) {
-
-			// TODO : restrict to endorsable roles... 
-			// TODO program roles available on context   
-			$roles = $this->block->get_usable_roles();
+        	
 
 			// draft file handling for all
             $text_all = $this->block->config->text_all;
@@ -81,21 +117,21 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
 					// draft file handling for each
 					$textvar = 'text_'.$r->id;
 					$configtextvar = 'config_text_'.$r->id;
-		            $$textvar = $this->block->config->$textvar;
-		            $draftid_editor = file_get_submitted_draft_itemid('config_text_'.$r->id);
+		            $text_0 = @$this->block->config->$textvar;
+		            $draftid_editor = file_get_submitted_draft_itemid($configtextvar);
 		            if (empty($$textvar)) {
 		                $currenttext = '';
 		            } else {
 		                $currenttext = $$textvar;
 		            }
-		        	$defaults->{$configtextvar}['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', $textvar, 0, array('subdirs' => true), $currenttext);
+		        	$defaults->{$configtextvar}['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content', 0, array('subdirs' => true), $currenttext);
 		            $defaults->{$configtextvar}['itemid'] = $draftid_editor;
 		            $defaults->{$configtextvar}['format'] = @$this->block->config->format;
 				}
 			}
         } else {
             $text_all = '';
-			if (!empty($groups)){
+			if (!empty($roles)){
 				foreach($roles as $r){
 					$textvar = 'text_'.$r->id;
 					$$textvar = '';
@@ -127,7 +163,7 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
 		if (!empty($roles)){
 			foreach($roles as $r){
 				$textvar = 'text_'.$r->id;
-        		$this->block->config->{$textvar} = $$textvar;
+        		$this->block->config->{$textvar} = @$$textvar;
 			}
 		}
 
@@ -137,5 +173,4 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         }
 
     }
-    
 }

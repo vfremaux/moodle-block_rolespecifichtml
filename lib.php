@@ -33,7 +33,7 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
 
     require_course_login($course);
 
-    if ($filearea !== 'content' && !preg_match('/^text_/', $filearea)) {
+    if ($filearea !== 'content') {
         send_file_not_found();
     }
 
@@ -42,7 +42,7 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
     $filename = array_pop($args);
     $filepath = $args ? '/'.implode('/', $args).'/' : '/';
 
-    if (!$file = $fs->get_file($context->id, 'block_rolespecifichtml', $filearea, 0, $filepath, $filename) or $file->is_directory()) {
+    if (!$file = $fs->get_file($context->id, 'block_rolespecifichtml', 'content', 0, $filepath, $filename) or $file->is_directory()) {
         send_file_not_found();
     }
 
@@ -73,26 +73,31 @@ function block_rolespecifichtml_global_db_replace($search, $replace) {
     $instances = $DB->get_recordset('block_instances', array('blockname' => 'rolespecifichtml'));
     foreach ($instances as $instance) {
         // TODO: intentionally hardcoded until MDL-26800 is fixed
-        $blockobj = block_instance('block_rolespecifichtml', $instance);
+        $config = unserialize(base64_decode($instance->configdata));
         $commit = false;
-        if (isset($blockobj->config->text_all) and is_string($blockobj->config->text_all)) {
+        if (isset($config->text_all) and is_string($config->text_all)) {
         	$commit = true;
-            $blockobj->config->text_all = str_replace($search, $replace, $blockobj->config->text_all);
+            $config->text_all = str_replace($search, $replace, $config->text_all);
         }
 
-        $roles = $blockobj->get_usable_roles();
-        if (!empty($roles)){
-        	foreach($roles as $r){
-	        	$textvar = 'text_'.$r->id;
-		        if (isset($blockobj->config->{$textvar}) and is_string($blockobj->config->{$textvar})) {
+        if (isset($config->text_0) and is_string($config->text_0)) {
+        	$commit = true;
+            $config->text_0 = str_replace($search, $replace, $config->text_0);
+        }
+        
+        $groups = groups_get_all_groups($isntance->courseid);
+        if (!empty($groups)){
+        	fireach($groups as $g){
+	        	$textvar = 'text_'.$g->id;
+		        if (isset($config->{$textvar}) and is_string($config->{$textvar})) {
 		        	$commit = true;
-		            $blockobj->config->{$textvar} = str_replace($search, $replace, $blockobj->config->{$textvar});
+		            $config->{$textvar} = str_replace($search, $replace, $config->{$textvar});
 		        }
 		    }
         }
         
         if ($commit){
-            $DB->set_field('block_instances', 'configdata', base64_encode(serialize($blockobj->config)), array('id' => $instance->id));
+            $DB->set_field('block_instances', 'configdata', base64_encode(serialize($config)), array('id' => $instance->id));
         }
     }
     $instances->close();

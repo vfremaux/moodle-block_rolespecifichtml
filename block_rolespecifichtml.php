@@ -7,7 +7,7 @@ class block_rolespecifichtml extends block_base {
     }
 
     function applicable_formats() {
-        return array('all' => true, 'admin' => false);
+        return array('all' => true, 'admin' => false, 'my' => false);
     }
 
     function specialization() {
@@ -35,25 +35,16 @@ class block_rolespecifichtml extends block_base {
         $this->content = new stdClass;
 
         $this->content->text = '';
-        
-        $context = context_course::instance($COURSE->id);
-        if (is_role_switched($COURSE->id)){
-        	$roleid = $USER->access['rsw'][$context->path]; 
-        } else if (!empty($userroles)){
-	        if ($userroles = get_user_roles($context, $USER->id, false)){
-		        $roleid = array_pop(array_keys($userroles));
-		    }
-	    }
-	    
-		if ($this->config){
-	        $this->content = new stdClass;
-	        $tk = "text_all";
-	        $this->config->$tk = file_rewrite_pluginfile_urls($this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
-	        $this->content->text .= !empty($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
-	        $tk = "text_{$roleid}";
-	 		$this->config->$tk = file_rewrite_pluginfile_urls($this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', $tk, NULL);
-	        $this->content->text .= isset($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
-	    }
+
+        $roleid = $this->get_highest_role();
+
+        $this->content = new stdClass;
+        $tk = "text_all";
+        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
+        $this->content->text .= !empty($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
+        $textkey = "text_$roleid";
+ 		$this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
+        $this->content->text = isset($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
         $this->content->footer = '';
         
         unset($filteropt); // memory footprint
@@ -71,16 +62,16 @@ class block_rolespecifichtml extends block_base {
 
         $config = clone($data);
         // Move embedded files into a proper filearea and adjust HTML links to match
-        $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecifichtml', 'content', 0, array('subdirs' => true), $data->text_all['text']);
+        $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), $data->text_all['text']);
         $config->format_all = $data->text_all['format'];
 
-		$roles = $this->get_usable_roles();
-		if (!empty($roles)){
-			foreach($roles as $r){
-				$textkey = 'text_'.$r->id;
-				$formatkey = 'format_'.$r->id;
-	        	$config->{$textkey} = file_save_draft_area_files($data->{$textkey}['itemid'], $this->context->id, 'block_rolespecifichtml', $textkey, 0, array('subdirs' => true), $data->{$textkey}['text']);
-	        	$config->{$formatkey} = $data->{$textkey}['format'];
+		$groups = groups_get_all_groups($COURSE->id);
+		if (!empty($groups)){
+			foreach($groups as $g){
+				$textkey = 'text_'.$g->id;
+				$formatkey = 'format_'.$g->id;
+	        	$config->{$textkey} = file_save_draft_area_files(@$data->{$textkey}['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), @$data->{$textkey}['text']);
+	        	$config->{$formatkey} = @$data->{$textkey}['format'];
 	        }
 		}
 
@@ -138,30 +129,17 @@ class block_rolespecifichtml extends block_base {
     function get_highest_role(){
     	global $COURSE, $USER;
     	
-    	$context = context_course::instance($COURSE->id);
+    	if (empty($this->config) || $this->config->context == 'course'){
+	    	$context = context_course::instance($COURSE->id);
+	    } else {
+	    	$context = context_system::instance();
+	    }
     	if ($roles = get_user_roles($context, $USER->id, false)){
-    		$highest = next($roles);
-    		return $highest->id;
+    		if ($highest = next($roles)){
+	    		return $highest->id;
+	    	}
     	}
     	return 0;
-    }
-
-    function get_usable_roles(){
-    	global $DB;
-    	
-		$sql = "
-			SELECT DISTINCT
-				r.*
-			FROM
-				{role} r,
-				{role_context_levels} rcl
-			WHERE
-				r.id = rcl.roleid AND
-				contextlevel >= 50
-		";
-	    $roles = $DB->get_records_sql($sql);
-	    
-	    return $roles;
     }
 }
 ?>

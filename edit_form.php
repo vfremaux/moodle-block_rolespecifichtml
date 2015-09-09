@@ -43,6 +43,11 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         $mform->setDefault('config_context', 'course');
         $mform->addHelpButton('config_context', 'context', 'block_rolespecifichtml');
 
+        $displayopts['allmatches'] = get_string('showallmatches', 'block_rolespecifichtml');
+        $displayopts['highest'] = get_string('showhighest', 'block_rolespecifichtml');
+        $mform->addElement('select', 'config_display', get_string('configdisplay', 'block_rolespecifichtml'), $displayopts);
+        $mform->setDefault('config_display', 'highest');
+
         $editoroptions = array('maxfiles' => EDITOR_UNLIMITED_FILES, 'noclean' => true, 'context' => $this->block->context);
         $mform->addElement('editor', 'config_text_all', get_string('configcontentforall', 'block_rolespecifichtml'), null, $editoroptions);
         $mform->setType('config_text_all', PARAM_RAW); // XSS is prevented when printing the block contents and serving files
@@ -90,25 +95,16 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         global $COURSE, $DB;
 
         $this->context = (empty($this->block->config) || $this->block->config->context == 'course') ? context_course::instance($COURSE->id) : context_system::instance() ;
+        if (empty($this->block->config) || $this->block->config->context == 'course') {
+            $contextlevel = CONTEXT_COURSE;
+            $context = context_course::instance($COURSE->id);
+        } else {
+            $contextlevel = CONTEXT_SYSTEM;
+            $context = context_system::instance();
+        }
 
-        /*
-        // TODO : restrict to endorsable roles... 
-        // TODO program roles available on context   
-        $sql = "
-            SELECT DISTINCT
-                r.*
-            FROM
-                {role} r,
-                {role_context_levels} rcl
-            WHERE
-                r.id = rcl.roleid AND
-                contextlevel = ?
-        ";
-
-        $roles = $DB->get_records_sql($sql, array($this->contextlevel));
-        */
-        $contextroles = get_roles_for_contextlevels($this->context->contextlevel);
-        $roles = role_fix_names(get_all_roles(), $this->context, ROLENAME_ORIGINAL);
+        $contextroles = get_roles_for_contextlevels($contextlevel);
+        $roles = role_fix_names(get_all_roles(), $context, ROLENAME_ORIGINAL);
 
         if (!empty($this->block->config) && is_object($this->block->config)) {
 
@@ -134,13 +130,13 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
                     // Draft file handling for each.
                     $textvar = 'text_'.$r->id;
                     $configtextvar = 'config_text_'.$r->id;
-                    $text_0 = @$this->block->config->$textvar;
+                    // $text_0 = @$this->block->config->$textvar;
                     $draftid_editor = file_get_submitted_draft_itemid($configtextvar);
 
-                    if (empty($$textvar)) {
+                    if (empty($this->block->config->$textvar)) {
                         $currenttext = '';
                     } else {
-                        $currenttext = $$textvar;
+                        $currenttext = $this->block->config->$textvar;
                     }
 
                     $defaults->{$configtextvar}['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content', 0, array('subdirs' => true), $currenttext);
@@ -174,7 +170,7 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
                 unset($this->block->config->{$textvar});
             }
         }
-        parent::set_data($defaults);
+        parent::set_data($defaults, $files);
 
         // Restore $text
         if (!isset($this->block->config)) {
@@ -192,5 +188,6 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
             // Reset the preserved title.
             $this->block->config->title = $title;
         }
+
     }
 }

@@ -50,20 +50,34 @@ class block_rolespecifichtml extends block_base {
 
         $this->content = new stdClass;
 
-        $this->content->text = '';
-
-        $roleid = $this->get_highest_role();
+        $roleids = null;
+        if (@$this->config->display == 'highest') {
+            $highest = $this->get_highest_role();
+            if ($highest) {
+                $roleids = array($highest);
+            }
+        } else {
+            $roleids = $this->get_user_roles();
+        }
 
         $this->content = new stdClass;
+        $this->content->text = '';
+
         $tk = "text_all";
         if (!isset($this->config)) {
             $this->config = new StdClass();
         }
-        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
+
+        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
         $this->content->text .= !empty($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
-        $textkey = "text_$roleid";
-        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', NULL);
-        $this->content->text = isset($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
+
+        if (!empty($roleids)) {
+            foreach ($roleids as $roleid) {
+                $tk = "text_$roleid";
+                $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
+                $this->content->text .= isset($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
+            }
+        }
         $this->content->footer = '';
 
         unset($filteropt); // Memory footprint.
@@ -77,20 +91,26 @@ class block_rolespecifichtml extends block_base {
      * Serialize and store config data
      */
     public function instance_config_save($data, $nolongerused = false) {
-        global $DB, $COURSE;
+        global $DB, $COURSE, $USER;
 
         $config = clone($data);
         // Move embedded files into a proper filearea and adjust HTML links to match.
         $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), $data->text_all['text']);
         $config->format_all = $data->text_all['format'];
 
-        $groups = groups_get_all_groups($COURSE->id);
-        if (!empty($groups)){
-            foreach($groups as $g){
-                $textkey = 'text_'.$g->id;
-                $formatkey = 'format_'.$g->id;
-                $config->{$textkey} = file_save_draft_area_files(@$data->{$textkey}['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), @$data->{$textkey}['text']);
-                $config->{$formatkey} = @$data->{$textkey}['format'];
+        if (empty($this->config) || $this->config->context == 'course') {
+            $contextlevel = CONTEXT_COURSE;
+        } else {
+            $contextlevel = CONTEXT_SYSTEM;
+        }
+        $roles = get_roles_for_contextlevels($contextlevel);
+
+        if (!empty($roles)) {
+            foreach (array_values($roles) as $rid) {
+                $tk = 'text_'.$rid;
+                $fk = 'format_'.$rid;
+                $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), @$data->{$tk}['text']);
+                $config->{$fk} = @$data->{$tk}['format'];
             }
         }
 
@@ -145,7 +165,7 @@ class block_rolespecifichtml extends block_base {
     }
 
     /**
-     * get highest role in course context
+     * get highest role in context
      */
     public function get_highest_role() {
         global $COURSE, $USER;
@@ -155,11 +175,36 @@ class block_rolespecifichtml extends block_base {
         } else {
             $context = context_system::instance();
         }
-        if ($roles = get_user_roles($context, $USER->id, false)) {
-            if ($highest = next($roles)) {
-                return $highest->id;
+        $roles = get_user_roles($context, $USER->id, false);
+
+        if ($roles) {
+            if ($highest = array_shift($roles)) {
+                return $highest->roleid;
             }
         }
         return 0;
+    }
+
+    /**
+     * get all roles in context
+     */
+    public function get_user_roles() {
+        global $COURSE, $USER;
+
+        if (empty($this->config) || $this->config->context == 'course') {
+            $context = context_course::instance($COURSE->id);
+        } else {
+            $context = context_system::instance();
+        }
+        $roles = get_user_roles($context, $USER->id, false);
+
+        $roleids = array();
+        if (!empty($roles)) {
+            foreach($roles as $r) {
+                $roleids[] = $r->roleid;
+            }
+            return $roleids;
+        }
+        return null;
     }
 }

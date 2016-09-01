@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
- * Form for editing HTML block instances.
- *
  * @package   block_rolespecifichtml
- * @copyright 2012 Valery Fremaux (valery.fremaux@gmail.com)
+ * @category  blocks
+ * @author    Valery Fremaux (valery.fremaux@gmail.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version   Moodle 2.x
  */
 
 class block_rolespecifichtml_edit_form extends block_edit_form {

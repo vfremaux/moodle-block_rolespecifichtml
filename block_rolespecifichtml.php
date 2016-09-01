@@ -14,6 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
+/**
+ * @package   block_rolespecifichtml
+ * @category  blocks
+ * @author    Valery Fremaux (valery.fremaux@gmail.com)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once($CFG->dirroot.'/lib/filelib.php');
 
 class block_rolespecifichtml extends block_base {
@@ -69,13 +78,23 @@ class block_rolespecifichtml extends block_base {
         }
 
         $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
-        $this->content->text .= !empty($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
+        if (is_array($this->config->$tk)) {
+            $arr = $this->config->$tk;
+            $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
+        } else {
+            $this->content->text .= !empty($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
+        }
 
         if (!empty($roleids)) {
             foreach ($roleids as $roleid) {
                 $tk = "text_$roleid";
                 $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
-                $this->content->text .= isset($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
+                if (is_array($this->config->$tk)) {
+                    $arr = $this->config->$tk;
+                    $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
+                } else {
+                    $this->content->text .= !empty($this->config->$tk) ? format_text($this->config->$tk, FORMAT_HTML, $filteropt) : '';
+                }
             }
         }
         $this->content->footer = '';
@@ -93,15 +112,17 @@ class block_rolespecifichtml extends block_base {
     public function instance_config_save($data, $nolongerused = false) {
         global $DB, $COURSE, $USER;
 
+        $context = context::instance_by_id($this->instance->parentcontextid);
+
         $config = clone($data);
         // Move embedded files into a proper filearea and adjust HTML links to match.
         $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), $data->text_all['text']);
         $config->format_all = $data->text_all['format'];
 
-        if (empty($this->config) || $this->config->context == 'course') {
+        if (!$context) {
             $contextlevel = CONTEXT_COURSE;
         } else {
-            $contextlevel = CONTEXT_SYSTEM;
+            $contextlevel = $context->contextlevel;
         }
         $roles = get_roles_for_contextlevels($contextlevel);
 

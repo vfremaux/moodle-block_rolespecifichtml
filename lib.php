@@ -14,13 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Form for editing HTML block instances.
  *
  * @package   block_rolespecifichtml
+ * @category  blocks
  * @copyright 2012 Valery Fremaux (valery.fremaux@gmail.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version   Moodle 2.x
  */
 
 function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $filearea, $args, $forcedownload) {
@@ -86,7 +88,7 @@ function block_rolespecifichtml_global_db_replace($search, $replace) {
             $config->text_0 = str_replace($search, $replace, $config->text_0);
         }
 
-        $groups = groups_get_all_groups($isntance->courseid);
+        $groups = groups_get_all_groups($instance->courseid);
         if (!empty($groups)) {
             foreach ($groups as $g) {
                 $textvar = 'text_'.$g->id;

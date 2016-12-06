@@ -19,7 +19,7 @@
  *
  * @package    block_rolespecifichtml
  * @category   blocks
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @copyright  2013 Valery Fremaux (valery.fremaux@gmail.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -31,7 +31,5 @@ $plugin->component = 'block_rolespecifichtml';  // Full name of the plugin (used
 $plugin->maturity = MATURITY_RC;
 $plugin->release = '3.1.0 (build 2016083100)';
 
-// Non Moodle fields
-// This fields will help overmanagement code builders without forcing upgrade to play
-$plugin->codeversion = 2016083100.00;
-$plugin->codeincrement = 0;
+// Non Moodle attributes.
+$plugin->codeincrement = '3.1.0000';

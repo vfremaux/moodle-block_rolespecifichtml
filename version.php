@@ -15,12 +15,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details
+ * Version details.
  *
  * @package    block_rolespecifichtml
  * @category   blocks
- * @author     valery fremaux (valery.fremaux@gmail.com)
- * @copyright  2012 valery fremaux (valery.fremaux@gmail.com)
+ * @author     valery fremaux <valery.fremaux@gmail.com>
+ * @copyright  2012 onwards valery fremaux (valery.fremaux@gmail.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -32,7 +32,5 @@ $plugin->component = 'block_rolespecifichtml';  // Full name of the plugin (used
 $plugin->maturity = MATURITY_RC;
 $plugin->release = '2.8.0 (build 2016083100)'; 
 
-// Non Moodle fields
-// This fields will help overmanagement code builders without forcing upgrade to play
-$plugin->codeversion = 2016083100.00;
-$plugin->codeincrement = 0;
+// Non moodle attributes.
+$plugin->codeincrement = '2.8.0000';

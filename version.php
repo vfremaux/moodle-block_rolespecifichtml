@@ -15,23 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details
+ * Version details.
  *
- * @package    block_rolespecifichtml
- * @category   blocks
- * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package     block_rolespecifichtml
+ * @category    blocks
+ * @author      Valery Fremaux <valery.fremaux@gmail.com>
+ * @copyright   2013 Valery Fremaux (http://www.mylearningfactory.com)
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2016083100;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2015111100;        // Requires this Moodle version
-$plugin->component = 'block_rolespecifichtml';  // Full name of the plugin (used for diagnostics)
+$plugin->version   = 2016083100;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->requires  = 2015111100;        // Requires this Moodle version.
+$plugin->component = 'block_rolespecifichtml';  // Full name of the plugin (used for diagnostics).
 $plugin->maturity = MATURITY_RC;
-$plugin->release = '3.0.0 (build 2013031000)'; 
+$plugin->release = '3.0.0 (build 2013031000)';
 
-// Non Moodle fields
-// This fields will help overmanagement code builders without forcing upgrade to play
-$plugin->codeversion = 2016083100.00;
-$plugin->codeincrement = 0;
+// Non Moodle attributes.
+$plugin->codeincrement = '3.0.0000';

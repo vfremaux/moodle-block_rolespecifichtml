@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details
+ * Version details.
  *
  * @package    block_rolespecifichtml
  * @category   blocks
@@ -32,7 +32,5 @@ $plugin->component = 'block_rolespecifichtml';  // Full name of the plugin (used
 $plugin->maturity = MATURITY_RC;
 $plugin->release = '2.9.0 (build 2016083100)'; 
 
-// Non Moodle fields
-// This fields will help overmanagement code builders without forcing upgrade to play
-$plugin->codeversion = 2016083100.00;
-$plugin->codeincrement = 0;
+// Non Moodle attributes.
+$plugin->codeincrement = '2.9.0000';

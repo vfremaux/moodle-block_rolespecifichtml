@@ -19,18 +19,18 @@
  *
  * @package    block_rolespecifichtml
  * @category   blocks
- * @author     valery fremaux <valery.fremaux@gmail.com>
- * @copyright  2012 onwards valery fremaux (valery.fremaux@gmail.com)
+ * @author     valery fremaux (valery.fremaux@gmail.com)
+ * @copyright  2012 valery fremaux (valery.fremaux@gmail.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2016083100;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2014110400;        // Requires this Moodle version
+$plugin->requires  = 2015050500;        // Requires this Moodle version
 $plugin->component = 'block_rolespecifichtml';  // Full name of the plugin (used for diagnostics)
 $plugin->maturity = MATURITY_RC;
-$plugin->release = '2.8.0 (build 2016083100)'; 
+$plugin->release = '2.9.0 (build 2016083100)'; 
 
-// Non moodle attributes.
-$plugin->codeincrement = '2.8.0000';
+// Non Moodle attributes.
+$plugin->codeincrement = '2.9.0000';

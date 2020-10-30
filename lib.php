@@ -34,16 +34,21 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
 
     require_course_login($course);
 
-    if ($filearea !== 'content') {
+    if (substr($filearea,0,8) !== 'content_') {
         send_file_not_found();
     }
+    $role = substr($filearea,8);
+    if (!$role){
+        send_file_not_found();
+    }
+    //TODO check if user should have access.
 
     $fs = get_file_storage();
 
     $filename = array_pop($args);
     $filepath = $args ? '/'.implode('/', $args).'/' : '/';
 
-    if (!$file = $fs->get_file($context->id, 'block_rolespecifichtml', 'content', 0, $filepath, $filename) or $file->is_directory()) {
+    if (!$file = $fs->get_file($context->id, 'block_rolespecifichtml', $filearea, 0, $filepath, $filename) or $file->is_directory()) {
         send_file_not_found();
     }
 
@@ -60,7 +65,7 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
         $forcedownload = true;
     }
 
-    session_get_instance()->write_close();
+    \core\session\manager::write_close();
     send_stored_file($file, 60*60, 0, $forcedownload);
 }
 

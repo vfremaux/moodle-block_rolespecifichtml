@@ -60,7 +60,7 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
         $forcedownload = true;
     }
 
-    session_get_instance()->write_close();
+    \core\session\manager::write_close();
     send_stored_file($file, 60*60, 0, $forcedownload);
 }
 

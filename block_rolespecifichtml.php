@@ -32,7 +32,7 @@ class block_rolespecifichtml extends block_base {
     }
 
     public function applicable_formats() {
-        return array('all' => true, 'admin' => false, 'my' => false);
+        return array('all' => true);
     }
 
     public function specialization() {

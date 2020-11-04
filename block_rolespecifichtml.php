@@ -119,16 +119,22 @@ class block_rolespecifichtml extends block_base {
         $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), $data->text_all['text']);
         $config->format_all = $data->text_all['format'];
 
-        if (!$context) {
-            $contextlevel = CONTEXT_COURSE;
-        } else {
-            $contextlevel = $context->contextlevel;
-        }
-        $roles = get_roles_for_contextlevels($contextlevel);
+        $contextroles = $this->get_contextlevel_roles($config->context);
+        $roles = get_all_roles();
 
         if (!empty($roles)) {
-            foreach (array_values($roles) as $rid) {
+            foreach ($roles as $r) {
+                $rid=$r->id;
                 $tk = 'text_'.$rid;
+                if (!in_array($rid, $contextroles)) {
+                    if(isset($data->{$tk})){
+                        unset($data->{$tk});
+                    }
+                    if(isset($config->{$tk})){
+                        unset($config->{$tk});
+                    }
+                    continue;
+                }
                 $fk = 'format_'.$rid;
                 $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), @$data->{$tk}['text']);
                 $config->{$fk} = @$data->{$tk}['format'];
@@ -189,14 +195,24 @@ class block_rolespecifichtml extends block_base {
      * get highest role in context
      */
     public function get_highest_role() {
-        global $COURSE, $USER;
-
-        if (empty($this->config) || $this->config->context == 'course') {
-            $context = context_course::instance($COURSE->id);
+        global $COURSE, $USER, $PAGE;
+        
+        $inherit = true;
+        if(empty($this->config)){
+            $context = $PAGE->context;
         } else {
-            $context = context_system::instance();
+            if(isset($this->config->inherit)){
+                $inherit = $this->config->inherit;
+            }
+            if ($this->config->context === 'system') {
+                $context = context_system::instance();
+            } else if($this->config->context === 'parent') {
+                $context = context::instance_by_id($this->instance->parentcontextid);
+            } else {
+                $context = $PAGE->context;
+            }
         }
-        $roles = get_user_roles($context, $USER->id, false);
+        $roles = get_user_roles($context, $USER->id, $inherit);
 
         if ($roles) {
             if ($highest = array_shift($roles)) {
@@ -210,14 +226,24 @@ class block_rolespecifichtml extends block_base {
      * get all roles in context
      */
     public function get_user_roles() {
-        global $COURSE, $USER;
-
-        if (empty($this->config) || $this->config->context == 'course') {
-            $context = context_course::instance($COURSE->id);
+        global $COURSE, $USER, $PAGE;
+        
+        $inherit = true;
+        if(empty($this->config)){
+            $context = $PAGE->context;
         } else {
-            $context = context_system::instance();
+            if(isset($this->config->inherit)){
+                $inherit = $this->config->inherit;
+            }
+            if ($this->config->context === 'system') {
+                $context = context_system::instance();
+            } else if($this->config->context === 'parent') {
+                $context = context::instance_by_id($this->instance->parentcontextid);
+            } else {
+                $context = $PAGE->context;
+            }
         }
-        $roles = get_user_roles($context, $USER->id, false);
+        $roles = get_user_roles($context, $USER->id, $inherit);
 
         $roleids = array();
         if (!empty($roles)) {
@@ -227,5 +253,75 @@ class block_rolespecifichtml extends block_base {
             return $roleids;
         }
         return null;
+    }
+
+    /**
+     * Get all roles for the block's configured context level, including inherited roles.
+     * $context string  type of context to check, defaults to that specified in config.
+     * $inherit bool    if roles inherited from higher contexts should be included.
+     * @return  array   array of role ids.
+     */
+    function get_contextlevel_roles($context = null, $inherit = null) {
+        $stop = null;
+        $parentcontext = context::instance_by_id($this->instance->parentcontextid);
+        
+        if (!isset($context)) {
+            if (empty($this->config) || !isset($this->config->context)) {
+                $context = 'page';
+            } else {
+                $context = $this->config->context;
+            }
+        }
+        if (!isset($inherit)) {
+            if (empty($this->config) || !isset($this->config->inherit)) {
+                $inherit = true;
+            } else {
+                $inherit = $this->config->inherit;
+            }
+        }
+        
+        if ($context === 'system') {
+            $contextlevel = CONTEXT_SYSTEM;
+        } else if ($context === 'parent' || $parentcontext->contextlevel === CONTEXT_USER) {
+            $contextlevel = $parentcontext->contextlevel;
+        } else {
+            $contextlevel = CONTEXT_MODULE;
+            if(!$inherit){
+                $inherit = true;
+                $stop = $parentcontext->contextlevel;
+            }
+        }
+            
+        $contextroles = array();
+        //Check each context level, and if set to inherit, change the level to the parent level.
+        //Needs to be in order such that the parent context level is after the child.
+        if ($contextlevel === CONTEXT_MODULE) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_COURSE;
+            }
+        }
+        if ($contextlevel === CONTEXT_COURSE) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_COURSECAT;
+            }
+        }
+        if ($contextlevel === CONTEXT_COURSECAT) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_SYSTEM;
+            }
+        }
+        if ($contextlevel === CONTEXT_USER) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_SYSTEM;
+            }
+        }
+        if ($contextlevel === CONTEXT_SYSTEM) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+        }
+        return $contextroles;
     }
 }

@@ -119,7 +119,7 @@ class block_rolespecifichtml extends block_base {
         $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecifichtml', 'content_all', 0, array('subdirs' => true), $data->text_all['text']);
         $config->format_all = $data->text_all['format'];
 
-        $contextroles = $this->get_contextlevel_roles($config->context);
+        $contextroles = $this->get_contextlevel_roles($config->context,$config->inherit);
         $roles = get_all_roles();
 
         if (!empty($roles)) {

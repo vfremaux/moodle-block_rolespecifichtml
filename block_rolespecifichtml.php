@@ -119,7 +119,8 @@ class block_rolespecifichtml extends block_base {
 
         unset($filteropt); // Memory footprint.
 
-        if (empty($this->content->text)) $this->content->text = '&nbsp;';
+        //hide block for users with no content produced.
+        //if (empty($this->content->text)) $this->content->text = '&nbsp;';
 
         return $this->content;
     }

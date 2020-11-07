@@ -68,6 +68,8 @@ class block_rolespecifichtml extends block_base {
         } else {
             $roleids = $this->get_user_roles();
         }
+        
+        $context='53/';
 
         $this->content = new stdClass;
         $this->content->text = '';
@@ -77,7 +79,7 @@ class block_rolespecifichtml extends block_base {
             $this->config = new StdClass();
         }
 
-        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_all', null);
+        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_all', $context . '0');
         if (is_array($this->config->$tk)) {
             $arr = $this->config->$tk;
             $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
@@ -86,9 +88,25 @@ class block_rolespecifichtml extends block_base {
         }
 
         if (!empty($roleids)) {
+            $seenroles = array();
             foreach ($roleids as $roleid) {
-                $tk = "text_$roleid";
-                $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_' . $roleid, null);
+                $lk = 'lookup_' . $roleid;
+                if(isset($this->config->{$lk})){
+                    $lookup = $this->config->{$lk};
+                } else {
+                    $lookup = false;
+                }
+                if ($lookup) {
+                    $tk = "text_$lookup";
+                } else {
+                    $lookup = $roleid;
+                    $tk = "text_$roleid";
+                }
+                if(in_array($lookup, $seenroles)){
+                    continue;
+                }
+                $seenroles[]=$lookup;
+                $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_' . $lookup, $context . $roleid);
                 if (is_array($this->config->$tk)) {
                     $arr = $this->config->$tk;
                     $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
@@ -121,23 +139,74 @@ class block_rolespecifichtml extends block_base {
 
         $contextroles = $this->get_contextlevel_roles($config->context,$config->inherit);
         $roles = get_all_roles();
+        
+        $removedroles=array();
+        $usedroles=array();
+        $lookeduproles=array();
 
         if (!empty($roles)) {
             foreach ($roles as $r) {
                 $rid=$r->id;
                 $tk = 'text_'.$rid;
+                $fk = 'format_'.$rid;
+                $lk = 'lookup_' . $rid;
+                if(isset($data->{$lk})){
+                    $lookup = $data->{$lk};
+                } else {
+                    $lookup = 0;
+                }
+                if ($lookup) {
+                    if (isset($lookeduproles[$lookup])) {
+                        $lookup = $lookeduproles[$lookup];
+                    }
+                    if(in_array($lookup,$removedroles)){
+                        $rtk = 'text_' . $lookup;
+                        if(isset($data->{$rtk})){
+                            $data->{$tk} = $data->{$rtk};
+                        }
+                        unset($data->{$rtk});
+                        if(isset($config->{$rtk})){
+                            $config->{$tk} = $config->{$rtk};
+                        }
+                        unset($config->{$rtk});
+                        $lookeduproles[$lookup]=$rid;
+                        $lookup = 0;
+                    } else if(!in_array($lookup,$usedroles)) {
+                        $lookup = 0;
+                    }
+                    if($lookup){
+                        $lookeduproles[$rid] = $lookup;
+                    }
+                }
                 if (!in_array($rid, $contextroles)) {
-                    if(isset($data->{$tk})){
-                        unset($data->{$tk});
-                    }
-                    if(isset($config->{$tk})){
-                        unset($config->{$tk});
-                    }
+                    $removedroles[]=$r->id;
                     continue;
                 }
+                if ($lookup) {
+                    $config->{$lk} = $lookup;
+                    unset($data->{$tk});
+                    unset($config->{$tk});
+                    unset($data->{$fk});
+                    unset($config->{$fk});
+                } else {
+                    $config->{$lk} = 0;
+                    $usedroles[]=$rid;
+                    $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecifichtml', 'content_' . $rid, 0, array('subdirs' => true), @$data->{$tk}['text']);
+                    $config->{$fk} = @$data->{$tk}['format'];
+                }
+            }
+        }
+        if (!empty($removedroles)) {
+            foreach ($removedroles as $rid) {
+                $tk = 'text_'.$rid;
                 $fk = 'format_'.$rid;
-                $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecifichtml', 'content_' . $rid, 0, array('subdirs' => true), @$data->{$tk}['text']);
-                $config->{$fk} = @$data->{$tk}['format'];
+                $lk = 'lookup_'.$rid;
+                unset($data->{$tk});
+                unset($config->{$tk});
+                unset($data->{$fk});
+                unset($config->{$fk});
+                unset($data->{$lk});
+                unset($config->{$lk});
             }
         }
 

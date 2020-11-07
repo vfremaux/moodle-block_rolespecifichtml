@@ -67,18 +67,28 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
         $roles = role_fix_names(get_all_roles(), $this->context, ROLENAME_ORIGINAL);
 
         $rids = array();
+        $priorroles=array(0=>get_string('textdefined', 'block_rolespecifichtml'));
+        $notfirst=false;
         foreach ($roles as $r) {
             if (!in_array($r->id, $this->contextroles)) {
                 continue;
             }
-            $mform->addElement('editor', 'config_text_'.$r->id, get_string('configcontent', 'block_rolespecifichtml', $r->localname), null, $editoroptions);
+            $label = get_string('configcontent', 'block_rolespecifichtml', $r->localname);
+            if ($notfirst) {
+                $mform->addElement('select','config_lookup_' . $r->id, $label, $priorroles);
+                $label='';
+            }
+            $mform->addElement('editor', 'config_text_'.$r->id, $label, null, $editoroptions);
             $mform->setType('config_text_'.$r->id, PARAM_RAW); // XSS is prevented when printing the block contents and serving files
             $rids[] = $r->id;
+            $priorroles[$r->id] = get_string('textreuse', 'block_rolespecifichtml', $r->localname);
+            if ($notfirst) {
+                $mform->disabledif('config_text_'.$r->id, 'config_lookup_' . $r->id, 'neq', '0');
+                $mform->hideif('config_text_'.$r->id.'[text]', 'config_lookup_' . $r->id, 'neq', '0');
+            } else {
+                $notfirst=true;
+            }
         }
-
-        $mform->addElement('hidden', 'config_textids');
-        $mform->setType('config_textids', PARAM_TEXT);
-        $mform->setDefault('config_textids', implode(',', $rids));
 
     }
 
@@ -106,6 +116,8 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
             $defaults->config_text_all['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content_all', 0, array('subdirs' => true), $currenttext);
             $defaults->config_text_all['itemid'] = $draftid_editor;
             $defaults->config_text_all['format'] = @$this->block->config->format;
+            
+            $priorroles=array();
 
             if (!empty($roles)) {
                 foreach ($roles as $r) {
@@ -115,18 +127,31 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
                     // Draft file handling for each.
                     $textvar = 'text_'.$r->id;
                     $configtextvar = 'config_text_'.$r->id;
-                    // $text_0 = @$this->block->config->$textvar;
-                    $draftid_editor = file_get_submitted_draft_itemid($configtextvar);
-
-                    if (empty($this->block->config->$textvar)) {
-                        $currenttext = '';
+                    $lookupvar = 'lookup_' . $r->id;
+                    if(isset($this->block->config->{$lookupvar})){
+                        $lookup = $this->block->config->{$lookupvar};
                     } else {
-                        $currenttext = $this->block->config->$textvar;
+                        $lookup = 0;
                     }
+                    if(empty($lookup) || !in_array($lookup, $priorroles)){
+                        $priorroles[] = $r->id;
+                        $defaults->{'config_lookup_' . $r->id} = 0;
+                        // $text_0 = @$this->block->config->$textvar;
+                        $draftid_editor = file_get_submitted_draft_itemid($configtextvar);
 
-                    $defaults->{$configtextvar}['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content_' . $r->id, 0, array('subdirs' => true), $currenttext);
-                    $defaults->{$configtextvar}['itemid'] = $draftid_editor;
-                    $defaults->{$configtextvar}['format'] = @$this->block->config->format;
+                        if (empty($this->block->config->$textvar)) {
+                            $currenttext = '';
+                        } else {
+                            $currenttext = $this->block->config->$textvar;
+                        }
+
+                        $defaults->{$configtextvar}['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content_' . $r->id, 0, array('subdirs' => true), $currenttext);
+                        $defaults->{$configtextvar}['itemid'] = $draftid_editor;
+                        $defaults->{$configtextvar}['format'] = @$this->block->config->format;
+                    } else {
+                        $defaults->{'config_lookup_' . $r->id} = $lookup;
+                        $$textvar = '';
+                    }
                 }
             }
         } else {

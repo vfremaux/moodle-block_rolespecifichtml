@@ -36,3 +36,5 @@ $string['parent'] = 'Context block was created in';
 $string['system'] = 'System context';
 $string['context'] = 'Context scope for roles';
 $string['context_help'] = 'If you change this context, please register context change and edit back the block configuration to have role list updated.';
+$string['textdefined'] = 'As defined below:';
+$string['textreuse'] = 'As defined for role {$a}';

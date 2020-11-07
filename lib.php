@@ -42,6 +42,8 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
         send_file_not_found();
     }
     //TODO check if user should have access
+    $contextcheck = array_shift($args);
+    $rolecheck = array_shift($args);
 
     $fs = get_file_storage();
 

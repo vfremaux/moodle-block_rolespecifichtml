@@ -69,7 +69,7 @@ class block_rolespecifichtml extends block_base {
             $roleids = $this->get_user_roles();
         }
         
-        $context='53/';
+        $context=$this->get_files_contextid().'/';
 
         $this->content = new stdClass;
         $this->content->text = '';
@@ -322,6 +322,26 @@ class block_rolespecifichtml extends block_base {
             return $roleids;
         }
         return null;
+    }
+
+    /**
+     * get contextid to append to files to later check for access.
+     */
+    public function get_files_contextid() {
+        global $COURSE, $USER, $PAGE;
+        
+        if(empty($this->config)){
+            $contextid = $PAGE->context->id;
+        } else {
+            if ($this->config->context === 'system') {
+                $contextid = context_system::instance()->id;
+            } else if($this->config->context === 'parent') {
+                $contextid = $this->instance->parentcontextid;
+            } else {
+                $contextid = $PAGE->context->id;
+            }
+        }
+        return $contextid;
     }
 
     /**

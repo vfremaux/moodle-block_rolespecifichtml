@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 
 function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $filearea, $args, $forcedownload) {
-    global $SCRIPT;
+    global $SCRIPT, $USER;
 
     if ($context->contextlevel != CONTEXT_BLOCK) {
         send_file_not_found();
@@ -42,8 +42,52 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
         send_file_not_found();
     }
     //TODO check if user should have access
-    $contextcheck = array_shift($args);
+    $contextcheckid = array_shift($args);
     $rolecheck = array_shift($args);
+    
+    if($role !== 'all'){
+        $block = block_instance_by_id($context->instanceid);
+        if (empty($block->config)) {
+            send_file_not_found();
+        }
+        if($role !== $rolecheck){
+            $lookupvar = 'lookup_'.$rolecheck;
+            if(!(isset($block->config->{$lookupvar}) && $role == $block->config->{$lookupvar})){
+                send_file_not_found();
+            }
+        }
+        if (isset($block->config->inherit)) {
+            $inherit=$block->config->inherit;
+        } else {
+            $inherit=true;
+        }
+        if (isset($block->config->context)) {
+            $cl = $block->config->context;
+        } else {
+            $cl = 'page';
+        }
+        if ($cl == 'system'){
+            $contextcheck = context_system::instance();
+        } else if ($cl == 'parent'){
+            $contextcheck = $context->get_parent_context();
+        } else {
+            $contextcheck = context::instance_by_id($contextcheckid);
+            if(!in_array($block->instance->parentcontextid, explode('/', $contextcheck->path))){
+                send_file_not_found();
+            }
+        }
+        $roles = get_user_roles($contextcheck, $USER->id, $inherit);
+        $hasaccess = false;
+        foreach($roles as $r){
+            if($r->roleid == $rolecheck){
+                $hasaccess = true;
+                break;
+            }
+        }
+        if(!$hasaccess){
+            send_file_not_found();
+        }
+    }
 
     $fs = get_file_storage();
 

@@ -34,7 +34,7 @@ function block_rolespecifichtml_pluginfile($course, $birecord_or_cm, $context, $
 
     require_course_login($course);
 
-    if (substr($filearea,0,8) !== 'content_')) {
+    if (substr($filearea,0,8) !== 'content_') {
         send_file_not_found();
     }
     $role = substr($filearea,8);

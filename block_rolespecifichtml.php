@@ -32,7 +32,7 @@ class block_rolespecifichtml extends block_base {
     }
 
     public function applicable_formats() {
-        return array('all' => true, 'admin' => false, 'my' => false);
+        return array('all' => true);
     }
 
     public function specialization() {
@@ -68,6 +68,8 @@ class block_rolespecifichtml extends block_base {
         } else {
             $roleids = $this->get_user_roles();
         }
+        
+        $context=$this->get_files_contextid().'/';
 
         $this->content = new stdClass;
         $this->content->text = '';
@@ -77,7 +79,7 @@ class block_rolespecifichtml extends block_base {
             $this->config = new StdClass();
         }
 
-        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
+        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_all', $context . '0');
         if (is_array($this->config->$tk)) {
             $arr = $this->config->$tk;
             $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
@@ -86,9 +88,25 @@ class block_rolespecifichtml extends block_base {
         }
 
         if (!empty($roleids)) {
+            $seenroles = array();
             foreach ($roleids as $roleid) {
-                $tk = "text_$roleid";
-                $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
+                $lk = 'lookup_' . $roleid;
+                if(isset($this->config->{$lk})){
+                    $lookup = $this->config->{$lk};
+                } else {
+                    $lookup = false;
+                }
+                if ($lookup) {
+                    $tk = "text_$lookup";
+                } else {
+                    $lookup = $roleid;
+                    $tk = "text_$roleid";
+                }
+                if(in_array($lookup, $seenroles)){
+                    continue;
+                }
+                $seenroles[]=$lookup;
+                $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_' . $lookup, $context . $roleid);
                 if (is_array($this->config->$tk)) {
                     $arr = $this->config->$tk;
                     $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
@@ -101,7 +119,8 @@ class block_rolespecifichtml extends block_base {
 
         unset($filteropt); // Memory footprint.
 
-        if (empty($this->content->text)) $this->content->text = '&nbsp;';
+        //hide block for users with no content produced.
+        //if (empty($this->content->text)) $this->content->text = '&nbsp;';
 
         return $this->content;
     }
@@ -116,22 +135,79 @@ class block_rolespecifichtml extends block_base {
 
         $config = clone($data);
         // Move embedded files into a proper filearea and adjust HTML links to match.
-        $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), $data->text_all['text']);
+        $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecifichtml', 'content_all', 0, array('subdirs' => true), $data->text_all['text']);
         $config->format_all = $data->text_all['format'];
 
-        if (!$context) {
-            $contextlevel = CONTEXT_COURSE;
-        } else {
-            $contextlevel = $context->contextlevel;
-        }
-        $roles = get_roles_for_contextlevels($contextlevel);
+        $contextroles = $this->get_contextlevel_roles($config->context,$config->inherit);
+        $roles = get_all_roles();
+        
+        $removedroles=array();
+        $usedroles=array();
+        $lookeduproles=array();
 
         if (!empty($roles)) {
-            foreach (array_values($roles) as $rid) {
+            foreach ($roles as $r) {
+                $rid=$r->id;
                 $tk = 'text_'.$rid;
                 $fk = 'format_'.$rid;
-                $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), @$data->{$tk}['text']);
-                $config->{$fk} = @$data->{$tk}['format'];
+                $lk = 'lookup_' . $rid;
+                if(isset($data->{$lk})){
+                    $lookup = $data->{$lk};
+                } else {
+                    $lookup = 0;
+                }
+                if ($lookup) {
+                    if (isset($lookeduproles[$lookup])) {
+                        $lookup = $lookeduproles[$lookup];
+                    }
+                    if(in_array($lookup,$removedroles)){
+                        $rtk = 'text_' . $lookup;
+                        if(isset($data->{$rtk})){
+                            $data->{$tk} = $data->{$rtk};
+                        }
+                        unset($data->{$rtk});
+                        if(isset($config->{$rtk})){
+                            $config->{$tk} = $config->{$rtk};
+                        }
+                        unset($config->{$rtk});
+                        $lookeduproles[$lookup]=$rid;
+                        $lookup = 0;
+                    } else if(!in_array($lookup,$usedroles)) {
+                        $lookup = 0;
+                    }
+                    if($lookup){
+                        $lookeduproles[$rid] = $lookup;
+                    }
+                }
+                if (!in_array($rid, $contextroles)) {
+                    $removedroles[]=$r->id;
+                    continue;
+                }
+                if ($lookup) {
+                    $config->{$lk} = $lookup;
+                    unset($data->{$tk});
+                    unset($config->{$tk});
+                    unset($data->{$fk});
+                    unset($config->{$fk});
+                } else {
+                    $config->{$lk} = 0;
+                    $usedroles[]=$rid;
+                    $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecifichtml', 'content_' . $rid, 0, array('subdirs' => true), @$data->{$tk}['text']);
+                    $config->{$fk} = @$data->{$tk}['format'];
+                }
+            }
+        }
+        if (!empty($removedroles)) {
+            foreach ($removedroles as $rid) {
+                $tk = 'text_'.$rid;
+                $fk = 'format_'.$rid;
+                $lk = 'lookup_'.$rid;
+                unset($data->{$tk});
+                unset($config->{$tk});
+                unset($data->{$fk});
+                unset($config->{$fk});
+                unset($data->{$lk});
+                unset($config->{$lk});
             }
         }
 
@@ -189,14 +265,24 @@ class block_rolespecifichtml extends block_base {
      * get highest role in context
      */
     public function get_highest_role() {
-        global $COURSE, $USER;
-
-        if (empty($this->config) || $this->config->context == 'course') {
-            $context = context_course::instance($COURSE->id);
+        global $COURSE, $USER, $PAGE;
+        
+        $inherit = true;
+        if(empty($this->config)){
+            $context = $PAGE->context;
         } else {
-            $context = context_system::instance();
+            if(isset($this->config->inherit)){
+                $inherit = $this->config->inherit;
+            }
+            if ($this->config->context === 'system') {
+                $context = context_system::instance();
+            } else if($this->config->context === 'parent') {
+                $context = context::instance_by_id($this->instance->parentcontextid);
+            } else {
+                $context = $PAGE->context;
+            }
         }
-        $roles = get_user_roles($context, $USER->id, false);
+        $roles = get_user_roles($context, $USER->id, $inherit);
 
         if ($roles) {
             if ($highest = array_shift($roles)) {
@@ -210,14 +296,24 @@ class block_rolespecifichtml extends block_base {
      * get all roles in context
      */
     public function get_user_roles() {
-        global $COURSE, $USER;
-
-        if (empty($this->config) || $this->config->context == 'course') {
-            $context = context_course::instance($COURSE->id);
+        global $COURSE, $USER, $PAGE;
+        
+        $inherit = true;
+        if(empty($this->config)){
+            $context = $PAGE->context;
         } else {
-            $context = context_system::instance();
+            if(isset($this->config->inherit)){
+                $inherit = $this->config->inherit;
+            }
+            if ($this->config->context === 'system') {
+                $context = context_system::instance();
+            } else if($this->config->context === 'parent') {
+                $context = context::instance_by_id($this->instance->parentcontextid);
+            } else {
+                $context = $PAGE->context;
+            }
         }
-        $roles = get_user_roles($context, $USER->id, false);
+        $roles = get_user_roles($context, $USER->id, $inherit);
 
         $roleids = array();
         if (!empty($roles)) {
@@ -227,5 +323,95 @@ class block_rolespecifichtml extends block_base {
             return $roleids;
         }
         return null;
+    }
+
+    /**
+     * get contextid to append to files to later check for access.
+     */
+    public function get_files_contextid() {
+        global $COURSE, $USER, $PAGE;
+        
+        if(empty($this->config)){
+            $contextid = $PAGE->context->id;
+        } else {
+            if ($this->config->context === 'system') {
+                $contextid = context_system::instance()->id;
+            } else if($this->config->context === 'parent') {
+                $contextid = $this->instance->parentcontextid;
+            } else {
+                $contextid = $PAGE->context->id;
+            }
+        }
+        return $contextid;
+    }
+
+    /**
+     * Get all roles for the block's configured context level, including inherited roles.
+     * $context string  type of context to check, defaults to that specified in config.
+     * $inherit bool    if roles inherited from higher contexts should be included.
+     * @return  array   array of role ids.
+     */
+    function get_contextlevel_roles($context = null, $inherit = null) {
+        $stop = null;
+        $parentcontext = context::instance_by_id($this->instance->parentcontextid);
+        
+        if (!isset($context)) {
+            if (empty($this->config) || !isset($this->config->context)) {
+                $context = 'page';
+            } else {
+                $context = $this->config->context;
+            }
+        }
+        if (!isset($inherit)) {
+            if (empty($this->config) || !isset($this->config->inherit)) {
+                $inherit = true;
+            } else {
+                $inherit = $this->config->inherit;
+            }
+        }
+        
+        if ($context === 'system') {
+            $contextlevel = CONTEXT_SYSTEM;
+        } else if ($context === 'parent' || $parentcontext->contextlevel === CONTEXT_USER) {
+            $contextlevel = $parentcontext->contextlevel;
+        } else {
+            $contextlevel = CONTEXT_MODULE;
+            if(!$inherit){
+                $inherit = true;
+                $stop = $parentcontext->contextlevel;
+            }
+        }
+            
+        $contextroles = array();
+        //Check each context level, and if set to inherit, change the level to the parent level.
+        //Needs to be in order such that the parent context level is after the child.
+        if ($contextlevel === CONTEXT_MODULE) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_COURSE;
+            }
+        }
+        if ($contextlevel === CONTEXT_COURSE) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_COURSECAT;
+            }
+        }
+        if ($contextlevel === CONTEXT_COURSECAT) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_SYSTEM;
+            }
+        }
+        if ($contextlevel === CONTEXT_USER) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+            if ($inherit && $stop !== $contextlevel) {
+                $contextlevel = CONTEXT_SYSTEM;
+            }
+        }
+        if ($contextlevel === CONTEXT_SYSTEM) {
+            $contextroles = array_merge($contextroles, get_roles_for_contextlevels($contextlevel));
+        }
+        return $contextroles;
     }
 }

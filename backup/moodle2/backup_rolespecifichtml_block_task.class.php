@@ -15,22 +15,40 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details
- *
  * @package    block_rolespecifichtml
  * @category   blocks
- * @copyright  2013 Valery Fremaux (valery.fremaux@gmail.com)
+ * @subpackage backup-moodle2
+ * @copyright  2003 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2016083100;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2020061500;        // Requires this Moodle version.
-$plugin->component = 'block_rolespecifichtml';  // Full name of the plugin (used for diagnostics).
-$plugin->maturity = MATURITY_RC;
-$plugin->supported = [39,311];
-$plugin->release = '3.9.0 (build 2016083100)';
+/**
+ * Specialised backup task for the groupspecifichtml block
+ * (has own DB structures to backup)
+ *
+ * TODO: Finish phpdocs
+ */
+class backup_rolespecifichtml_block_task extends backup_block_task {
 
-// Non moodle attributes.
-$plugin->codeincrement = '3.9.0000';
+    protected function define_my_settings() {
+    }
+
+    protected function define_my_steps() {
+        // groupspecifichtml has no step.
+    }
+
+    public function get_fileareas() {
+        return array(); // No associated fileareas.
+    }
+
+    public function get_configdata_encoded_attributes() {
+        return array(); // No special handling of configdata.
+    }
+
+    static public function encode_content_links($content) {
+        return $content; // No special encoding of links.
+    }
+}
+

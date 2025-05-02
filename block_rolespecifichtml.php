@@ -77,7 +77,7 @@ class block_rolespecifichtml extends block_base {
             $this->config = new StdClass();
         }
 
-        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
+        $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_all', null);
         if (is_array($this->config->$tk)) {
             $arr = $this->config->$tk;
             $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
@@ -88,7 +88,7 @@ class block_rolespecifichtml extends block_base {
         if (!empty($roleids)) {
             foreach ($roleids as $roleid) {
                 $tk = "text_$roleid";
-                $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content', null);
+                $this->config->$tk = file_rewrite_pluginfile_urls(@$this->config->$tk, 'pluginfile.php', $this->context->id, 'block_rolespecifichtml', 'content_' . $roleid, null);
                 if (is_array($this->config->$tk)) {
                     $arr = $this->config->$tk;
                     $this->content->text .= !empty($arr['text']) ? format_text($arr['text'], $arr['format'], $filteropt) : '';
@@ -116,7 +116,7 @@ class block_rolespecifichtml extends block_base {
 
         $config = clone($data);
         // Move embedded files into a proper filearea and adjust HTML links to match.
-        $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), $data->text_all['text']);
+        $config->text_all = file_save_draft_area_files($data->text_all['itemid'], $this->context->id, 'block_rolespecifichtml', 'content_all', 0, array('subdirs' => true), $data->text_all['text']);
         $config->format_all = $data->text_all['format'];
 
         if (!$context) {
@@ -130,7 +130,7 @@ class block_rolespecifichtml extends block_base {
             foreach (array_values($roles) as $rid) {
                 $tk = 'text_'.$rid;
                 $fk = 'format_'.$rid;
-                $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecificthtml', 'content', 0, array('subdirs' => true), @$data->{$tk}['text']);
+                $config->{$tk} = file_save_draft_area_files(@$data->{$tk}['itemid'], $this->context->id, 'block_rolespecifichtml', 'content_' . $rid, 0, array('subdirs' => true), @$data->{$tk}['text']);
                 $config->{$fk} = @$data->{$tk}['format'];
             }
         }

@@ -118,7 +118,7 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
                 $currenttext = $text_all;
             }
 
-            $defaults->config_text_all['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content', 0, array('subdirs' => true), $currenttext);
+            $defaults->config_text_all['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content_all', 0, array('subdirs' => true), $currenttext);
             $defaults->config_text_all['itemid'] = $draftid_editor;
             $defaults->config_text_all['format'] = @$this->block->config->format;
 
@@ -139,7 +139,7 @@ class block_rolespecifichtml_edit_form extends block_edit_form {
                         $currenttext = $this->block->config->$textvar;
                     }
 
-                    $defaults->{$configtextvar}['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content', 0, array('subdirs' => true), $currenttext);
+                    $defaults->{$configtextvar}['text'] = file_prepare_draft_area($draftid_editor, $this->block->context->id, 'block_rolespecifichtml', 'content_' . $r->id, 0, array('subdirs' => true), $currenttext);
                     $defaults->{$configtextvar}['itemid'] = $draftid_editor;
                     $defaults->{$configtextvar}['format'] = @$this->block->config->format;
                 }
